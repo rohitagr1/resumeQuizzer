@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import generateQuestionsRouter from './routers/generateQuestionsRouter.ts';
+import generateQuestionsRouter from './routes/generateQuestionsRouter.ts';
 
 const app = express();
 
