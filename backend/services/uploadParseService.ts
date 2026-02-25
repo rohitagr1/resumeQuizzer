@@ -1,31 +1,26 @@
-import multer from 'multer';
 import { PDFParse } from 'pdf-parse';
+import type { Express } from 'express';
 
-const upload = multer({ storage: multer.memoryStorage() }).single('resume');
+async function uploadPDF( file?: Express.Multer.File ){
 
-export async function uploadPdf( req ){
+   try{
+    if (!file) {
+        throw new Error('No file uploaded');
+    }
 
-    return new Promise( ( resolve, reject ) => {
+    if (file.mimetype !== 'application/pdf') {
+        throw new Error('Only PDF file allowed');
+    }
 
-        upload( req, {} as any, ( error ) => {
+    return file.buffer;
+   }
+   catch (error: any){
+    throw new Error(error?.message || 'Failes to process uploaded file')
+   }
 
-            if( error ){
-                return reject( error );
-            }
-            if( !req.file ){
-                return reject( new Error('No file uploaded') );
-            }
-            if( req.file.mimetype !== 'application/pdf' ){
-                return reject( new Error('Only PDF file allowed') );
-            }
-
-            resolve( req.file.buffer );
-
-        });
-    });
 }
 
-export async function parsePdf( pdfBuffer ){
+async function parsePDF( pdfBuffer: Buffer ){
 
     const parser = new PDFParse( { data: pdfBuffer } );
 
@@ -35,10 +30,13 @@ export async function parsePdf( pdfBuffer ){
         const pdfText = pdfData.text?.trim();
 
         if( !pdfText ){
-            throw new Error('could not extract text form pdf');
+            throw new Error('could not extract text from pdf');
         }
 
         return pdfText;
+    }
+    catch (error : any){
+        throw new Error(error?.message || 'Failed to parse PDF');
     }
     finally{
         await parser.destroy();
@@ -46,11 +44,18 @@ export async function parsePdf( pdfBuffer ){
 
 }
 
-export async function parsePdfText( req ){
+async function parsePDFText( file?: Express.Multer.File ){
 
-    const pdfBuffer = await uploadPdf( req );
-    const pdfText = await parsePdf( pdfBuffer );
+    try{
+        const pdfBuffer = await uploadPDF( file );
+        const pdfText = await parsePDF( pdfBuffer );
 
-    return pdfText;
+        return pdfText;
+    }
+    catch(error: any){
+        throw new Error(error?.message || 'Failes to parse uploaded PDF');
+    }
 
 }
+
+export default { parsePDFText };

@@ -1,22 +1,20 @@
-import { generateQuestionsService } from '../services/generateQuestionsService.ts';
-import { parsePdfText } from '../services/uploadParseService.ts';
+import type { Request, Response, NextFunction } from 'express';
+import generateQuestionsService from '../services/generateQuestionsService.ts';
+import uploadParseService from '../services/uploadParseService.ts';
 
-export async function generateQuestionsController( req, res ){
+export async function generateQuestionsController( req : Request, res : Response, next: NextFunction ){
 
     try{
 
-        const resumeText = await parsePdfText( req );
+        const resumeText = await uploadParseService.parsePDFText( req.file );
 
-        const questions = await generateQuestionsService( resumeText );
+        const questions = await generateQuestionsService.generateAIQuiz( resumeText );
         
         return res.status(200).json( {questions} );
 
     }
-    catch(error: any ){
-        return res.status(400).json({
-            error: error?.message || "Failed to generate Questions",
-        });
-
+    catch(error){
+        return next(error);
     }
 
 }
