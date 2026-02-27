@@ -1,13 +1,23 @@
-import type { NextFunction, Request, Response } from "express";
+import type { ErrorRequestHandler } from "express";
+import createHttpError from "http-errors";
+import { success } from "zod";
 
-function errorHandle( err: unknown, req: Request, res: Response, next: NextFunction ){
+const errorHandler: ErrorRequestHandler = ( err, _req, res, next ) => {
 
-    if( err instanceof Error ){
-        return res.status(400).json({ error: err.message });
+    if( res.headersSent){
+        return next(err);
     }
 
-    return res.status(500).json({ error: 'Internal Server Error' });
+    if( createHttpError.isHttpError( err ) ){
 
-}
+        return res.status(err.statusCode).json({ success: false, error: err.message });
 
-export default { errorHandle };
+    }
+
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+
+    return res.status(500).json({ success: false, error : message });
+
+};
+
+export default { errorHandler };

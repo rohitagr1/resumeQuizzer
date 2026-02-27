@@ -4,7 +4,7 @@ import uploadPDFMiddleware from '../middleware/uploadPDFMiddleware.ts';
 
 const router = express.Router();
 
-router.post('/generate-questions', uploadPDFMiddleware.uploadPDF, generateQuestionsController );
+router.post('/generate-questions', uploadPDFMiddleware.uploadPDF('resume'), generateQuestionsController );
 
 export default router;
 

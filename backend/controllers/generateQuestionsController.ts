@@ -10,7 +10,7 @@ export async function generateQuestionsController( req : Request, res : Response
 
         const questions = await generateQuestionsService.generateAIQuiz( resumeText );
         
-        return res.status(200).json( {questions} );
+        return res.locals.send( { questions }, 200, "Questions Generated");
 
     }
     catch(error){

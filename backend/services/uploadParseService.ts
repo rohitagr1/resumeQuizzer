@@ -1,21 +1,29 @@
 import { PDFParse } from 'pdf-parse';
 import type { Express } from 'express';
+import createHttpError from 'http-errors';
 
 async function uploadPDF( file?: Express.Multer.File ){
 
    try{
     if (!file) {
-        throw new Error('No file uploaded');
+        throw createHttpError(400, 'No file uploaded');
+
     }
 
     if (file.mimetype !== 'application/pdf') {
-        throw new Error('Only PDF file allowed');
+        throw createHttpError(415, 'Only PDF file allowed');
     }
 
     return file.buffer;
    }
-   catch (error: any){
-    throw new Error(error?.message || 'Failes to process uploaded file')
+   catch (error){
+
+    if( createHttpError.isHttpError( error )){
+        throw error;
+    }
+
+    throw createHttpError(500, "Failed to process uploaded file");
+
    }
 
 }
@@ -30,13 +38,16 @@ async function parsePDF( pdfBuffer: Buffer ){
         const pdfText = pdfData.text?.trim();
 
         if( !pdfText ){
-            throw new Error('could not extract text from pdf');
+            throw createHttpError(422, 'could not extract text from pdf');
         }
 
         return pdfText;
     }
-    catch (error : any){
-        throw new Error(error?.message || 'Failed to parse PDF');
+    catch ( error ){
+        if( createHttpError.isHttpError( error )){
+            throw error;
+        }
+        throw createHttpError(500, "Failed to parse PDF");
     }
     finally{
         await parser.destroy();
@@ -52,8 +63,11 @@ async function parsePDFText( file?: Express.Multer.File ){
 
         return pdfText;
     }
-    catch(error: any){
-        throw new Error(error?.message || 'Failes to parse uploaded PDF');
+    catch( error ){
+        if( createHttpError.isHttpError( error )){
+            throw error;
+        }
+        throw createHttpError(500, "Failed to parse uploaded PDF");
     }
 
 }

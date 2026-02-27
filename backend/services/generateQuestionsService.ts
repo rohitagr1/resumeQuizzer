@@ -1,5 +1,6 @@
 import  aiClient  from "../clients/AiClient.ts";
 import { generateQuestionsPrompt } from "../constants/generateQuestionsPrompt.ts";
+import createHttpError from "http-errors";
 
 
 async function generateAIQuiz( resumeText : string ){
@@ -13,14 +14,17 @@ async function generateAIQuiz( resumeText : string ){
         const jsonEnd = generatedText.lastIndexOf(']');
 
         if( jsonStart === -1 || jsonEnd === -1 ){
-            throw new Error('failed to parse ai results');
+            throw createHttpError(502, 'failed to parse ai results');
         }
 
         const questions = JSON.parse( generatedText.substring( jsonStart, jsonEnd + 1 ) );
         return questions;
     }
-    catch (error : any){
-        throw new Error(error?.message || 'Failed to generate questions')
+    catch ( error ){
+        if( createHttpError.isHttpError( error ) ){
+            throw error;
+        }
+        throw createHttpError(500, "Failed to generate questions");
     }
 }
 

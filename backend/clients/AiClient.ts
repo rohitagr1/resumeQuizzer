@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import createHttpError from 'http-errors';
 
 async function callLLM( prompt : string){
 
@@ -6,7 +7,7 @@ async function callLLM( prompt : string){
         const apiKey = process.env.GEMINI_API_KEY;
 
         if( !apiKey ){
-            throw new Error('Missing API_KEY');
+            throw createHttpError(500, 'Missing API_KEY');
         }
 
         const genAI = new GoogleGenerativeAI( apiKey );
@@ -17,13 +18,16 @@ async function callLLM( prompt : string){
         const text = result.response.text();
 
         if( !text?.trim() ){
-            throw new Error('Empty response from AI model');
+            throw createHttpError(502, 'Empty response from AI model');
         }
 
         return text;
     }
-    catch( error: any){
-        throw new Error(error?.message || 'Failed to call AI model' );
+    catch( error ){
+        if (createHttpError.isHttpError( error )) {
+            throw error;
+        }
+        throw createHttpError(502, "Failed to call AI model");
     }
 
 }
