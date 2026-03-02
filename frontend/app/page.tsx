@@ -2,6 +2,29 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signInWithPopup } from "firebase/auth";
+import { auth, ensureAuthPersistence, googleProvider } from "../lib/firebase";
+
+function getAuthErrorMessage(error: unknown): string {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: string }).code)
+      : "";
+
+  if (code === "auth/popup-closed-by-user") {
+    return "Google sign-in was closed before completion.";
+  }
+
+  if (code === "auth/popup-blocked") {
+    return "Popup was blocked by the browser. Enable popups and try again.";
+  }
+
+  if (code === "auth/cancelled-popup-request") {
+    return "Another sign-in attempt is already in progress.";
+  }
+
+  return "Unable to sign in with Google right now. Please try again.";
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -26,12 +49,29 @@ export default function Home() {
     setLoading(true);
 
     try {
+      await ensureAuthPersistence();
+
+      let user = auth.currentUser;
+      if (!user) {
+        const signInResult = await signInWithPopup(auth, googleProvider);
+        user = signInResult.user;
+      }
+
+      if (!user) {
+        throw new Error("Authentication failed. Please try again.");
+      }
+
+      const idToken = await user.getIdToken();
+
       const formData = new FormData();
       formData.append("resume", file);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
       const response = await fetch(`${apiUrl}/generate-questions`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
         body: formData,
       });
 
@@ -52,8 +92,15 @@ export default function Home() {
 
       sessionStorage.setItem("resumeQuizState", JSON.stringify(quizData));
       router.push("/quiz");
-    } catch (error: any) {
-      alert(error?.message || "Something went wrong while generating questions.");
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null && "code" in error
+          ? getAuthErrorMessage(error)
+          : error instanceof Error
+            ? error.message
+            : "Something went wrong while generating questions.";
+
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -64,7 +111,7 @@ export default function Home() {
       <div className="w-full max-w-xl mx-auto">
         <div className="glass p-8 rounded-2xl text-center">
           <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 shadow-inner">
-            <span className="text-3xl">📄</span>
+            <span className="text-3xl">PDF</span>
           </div>
 
           <h1 className="text-2xl font-semibold mb-2">Resume MCQ Generator</h1>
@@ -73,8 +120,8 @@ export default function Home() {
           <label htmlFor="file" className="block">
             <div className="flex items-center justify-center border-2 border-dashed border-white/10 rounded-lg py-6 cursor-pointer hover:border-white/20 transition">
               <div>
-                <div className="text-sm font-medium">Drag & drop or click to select a PDF</div>
-                <div className="text-xs muted mt-1">We only use the file locally to simulate question generation</div>
+                <div className="text-sm font-medium">Drag and drop or click to select a PDF</div>
+                <div className="text-xs muted mt-1">Google sign-in appears only when you click Generate Questions.</div>
               </div>
             </div>
           </label>
@@ -95,9 +142,9 @@ export default function Home() {
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className={`py-2 px-4 rounded-lg text-sm font-medium ${loading ? 'bg-white/20 text-white' : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700'}`}
+              className={`py-2 px-4 rounded-lg text-sm font-medium ${loading ? "bg-white/20 text-white" : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700"}`}
             >
-              {loading ? 'Generating…' : 'Generate Questions'}
+              {loading ? "Generating..." : "Generate Questions"}
             </button>
           </div>
 
