@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -21,25 +21,34 @@ export default function Quiz(): JSX.Element {
     try {
       const parsed = JSON.parse(raw) as QuizState;
       setState(parsed);
-    } catch (e) {
+    } catch {
       sessionStorage.removeItem(STORAGE_KEY);
       router.push("/");
     }
   }, [router]);
 
-  if (!state) return <div className="text-center p-8">Loading…</div>;
+  if (!state) {
+    return <div className="text-center p-8">Loading...</div>;
+  }
 
   const { questions, currentIndex, answers } = state;
-  const q: Question = questions[currentIndex];
+  const question: Question = questions[currentIndex];
 
   const answered = answers[currentIndex] !== null;
 
   const handleSelect = (choiceIndex: number) => {
-    if (answered) return; // already answered
-    const next = { ...state, answers: [...state.answers] } as QuizState;
-    next.answers[currentIndex] = choiceIndex;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setState(next);
+    if (answered) {
+      return;
+    }
+
+    const nextState: QuizState = {
+      ...state,
+      answers: [...state.answers],
+    };
+    nextState.answers[currentIndex] = choiceIndex;
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    setState(nextState);
   };
 
   const handleNext = () => {
@@ -48,38 +57,54 @@ export default function Quiz(): JSX.Element {
       router.push("/score");
       return;
     }
-    const next = { ...state, currentIndex: nextIndex };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setState(next);
+
+    const nextState: QuizState = {
+      ...state,
+      currentIndex: nextIndex,
+    };
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    setState(nextState);
   };
 
-  const progress = Math.round(((currentIndex + (answered ? 1 : 0)) / questions.length) * 100);
+  const progress = Math.round(
+    ((currentIndex + (answered ? 1 : 0)) / questions.length) * 100,
+  );
 
   return (
     <div className="glass p-6 rounded-2xl">
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm muted">Question {currentIndex + 1} of {questions.length}</div>
+        <div className="text-sm muted">
+          Question {currentIndex + 1} of {questions.length}
+        </div>
         <div className="text-sm font-medium accent">{progress}%</div>
       </div>
 
-      <div className="w-full h-2 bg-white/8 rounded-full mb-4 overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600" style={{ width: `${progress}%` }} />
+      <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-white/8">
+        <div
+          className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600"
+          style={{ width: `${progress}%` }}
+        />
       </div>
 
       <QuestionCard
-        question={q}
+        question={question}
         selected={answers[currentIndex]}
         onSelect={handleSelect}
       />
 
-      <div className="mt-6 flex justify-between items-center">
+      <div className="mt-6 flex items-center justify-between">
         <div className="text-xs muted">Answer once to continue</div>
         <button
           onClick={handleNext}
           disabled={!answered}
-          className={`px-4 py-2 rounded-lg text-sm text-white font-medium ${answered ? 'bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700' : 'bg-gray-200 cursor-not-allowed'}`}
+          className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
+            answered
+              ? "bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+              : "cursor-not-allowed bg-gray-300"
+          }`}
         >
-          {currentIndex + 1 >= questions.length ? 'Finish' : 'Next'}
+          {currentIndex + 1 >= questions.length ? "Finish" : "Next"}
         </button>
       </div>
     </div>

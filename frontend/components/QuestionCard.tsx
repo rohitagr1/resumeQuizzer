@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Question } from "../types/quiz";
@@ -10,55 +10,61 @@ type Props = {
 };
 
 export default function QuestionCard({ question, selected, onSelect }: Props) {
-  const text = question.text ?? (question as any).question;
+  const text = question.text || question.question || "Untitled question";
 
   return (
     <div>
-      <div className="text-lg font-semibold mb-4">{text}</div>
+      <div className="mb-4 text-lg font-semibold">{text}</div>
 
       <div className="space-y-3">
-        {question.choices.map((c, i) => {
-          const isSelected = selected === i;
-          const isCorrect = question.correctIndex === i;
+        {question.choices.map((choice, index) => {
+          const isSelected = selected === index;
+          const isCorrect = question.correctIndex === index;
 
-          let base = "w-full text-left p-3 rounded-lg border transition font-medium";
+          let buttonClass =
+            "w-full rounded-lg border p-3 text-left font-medium transition";
+
           if (selected === null) {
-            base += " border-gray-200 hover:shadow-sm bg-white text-gray-900";
+            buttonClass += " border-gray-200 bg-white text-gray-900 hover:shadow-sm";
           } else if (isCorrect) {
-            base += " option-correct";
+            buttonClass += " option-correct";
           } else if (isSelected) {
-            base += " option-wrong";
+            buttonClass += " option-wrong";
           } else {
-            base += " border-gray-100 bg-white text-gray-900 opacity-90";
+            buttonClass += " border-gray-100 bg-white text-gray-900 opacity-90";
           }
 
           return (
             <button
-              key={i}
-              onClick={() => onSelect(i)}
+              key={index}
+              onClick={() => onSelect(index)}
               disabled={selected !== null}
-              className={base}
+              className={buttonClass}
               aria-pressed={isSelected}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-base font-bold">
-                  {String.fromCharCode(65 + i)}
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-base font-bold">
+                  {String.fromCharCode(65 + index)}
                 </div>
-                <div className="flex-1">{c}</div>
-                {selected !== null && isCorrect && <div className="text-green-700 text-xl font-bold">✓</div>}
-                {selected !== null && isSelected && !isCorrect && <div className="text-red-700 text-xl font-bold">✕</div>}
+                <div className="flex-1">{choice}</div>
+                {selected !== null && isCorrect ? (
+                  <div className="text-sm font-semibold text-green-700">Correct</div>
+                ) : null}
+                {selected !== null && isSelected && !isCorrect ? (
+                  <div className="text-sm font-semibold text-red-700">Wrong</div>
+                ) : null}
               </div>
             </button>
           );
         })}
       </div>
 
-      {selected !== null && (
-        <div className="mt-4 p-3 rounded-lg bg-gray-50 text-sm text-gray-700 border border-gray-100">
-          <div className="font-semibold text-sm mb-1">Explanation</div>
-          <div className="text-sm">{question.explanation}</div>
+      {selected !== null ? (
+        <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-700">
+          <div className="mb-1 text-sm font-semibold">Explanation</div>
+          <div className="text-sm">{question.explanation || "No explanation provided."}</div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
