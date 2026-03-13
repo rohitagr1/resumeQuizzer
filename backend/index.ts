@@ -4,6 +4,7 @@ import cors from 'cors';
 import generateQuestionsRouter from './routes/generateQuestionsRouter.ts';
 import errorHandleMiddleware from './middleware/errorHandleMiddleware.ts';
 import responseHandleMiddleware from './middleware/responseHandleMiddleware.ts';
+import quizHistoryRouter from './routes/quizHistoryRouter.ts';
 
 
 const app = express();
@@ -16,6 +17,8 @@ app.use( responseHandleMiddleware.responseHandler)
 
 //Routes
 app.use('/', generateQuestionsRouter);
+
+app.use("/quiz-history", quizHistoryRouter);
 
 //Error Middleware
 app.use( errorHandleMiddleware.errorHandler );
